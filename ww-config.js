@@ -4,61 +4,39 @@ export default {
   id: 'your-workflow-progress-id', // <--- IMPORTANT: Change this to a unique ID for your component!
   name: 'Workflow Progress Indicator',
   version: '1.0.0',
-  src: 'src/index.js',
-  category: 'custom', // This places it under "Custom Components" in WeWeb Studio
+  src: 'wwElement.vue', // <--- THIS IS THE KEY CHANGE IF IT WAS 'src/index.js'
+                        // BASED ON YOUR SCREENSHOT, WEWEB IS LOOKING FOR THIS FILE
+  category: 'custom',
   editor: {
     label: {
-      en: "Workflow Progress", // This is the name you'll see in the WeWeb Studio Elements panel
+      en: "Workflow Progress",
     },
-    // You can add an icon here if you like, e.g.:
-    // icon: 'fontawesome/solid/tasks',
   },
   properties: {
-    // 1. Total Number of Steps
     totalSteps: {
       label: { en: "Total Steps" },
-      type: "Number", // It's a numerical value
-      defaultValue: 5, // A reasonable default
-      options: {
-        min: 1, // Ensure at least one step
-      },
+      type: "Number",
+      defaultValue: 5,
+      options: { min: 1 },
     },
-    // 2. Current Step
     currentStep: {
       label: { en: "Current Step" },
       type: "Number",
-      defaultValue: 1, // Start at the first step
-      options: {
-        min: 1,
-      },
+      defaultValue: 1,
+      options: { min: 1 },
     },
-    // 3. Step Names (Array of Strings)
     stepNames: {
       label: { en: "Step Names" },
-      type: "Array", // This will be an array
+      type: "Array",
       options: {
-        item: {
-          type: "String", // Each item in the array is a string
-          defaultValue: "Untitled Step",
-        },
+        item: { type: "String", defaultValue: "Untitled Step" },
       },
-      defaultValue: [
-        "Introduction",
-        "Details",
-        "Confirmation",
-        "Review",
-        "Completion"
-      ], // Example names
+      defaultValue: ["Introduction", "Details", "Confirmation", "Review", "Completion"],
     },
-    // 4. Action for Clicking a Completed Step
     onStepClick: {
       label: { en: "On Completed Step Click" },
-      type: "Action", // 'Action' type is used for events/workflows in WeWeb
-      options: {
-        isEvent: true, // Mark this as an event property
-      },
-      // You might want to define default parameters for the action if needed, e.g.,
-      // defaultValue: { name: 'onStepClick', parameters: [{ name: 'stepName', type: 'String' }] },
+      type: "Action",
+      options: { isEvent: true },
     },
   },
 };
