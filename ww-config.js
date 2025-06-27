@@ -55,7 +55,7 @@ export default {
       label: { en: "On Completed Step Click" },
       type: "Action", // 'Action' type is used for events/workflows in WeWeb
       options: {
-        is=""event: true, // Mark this as an event property
+        isEvent: true, // Mark this as an event property
       },
       // You might want to define default parameters for the action if needed, e.g.,
       // defaultValue: { name: 'onStepClick', parameters: [{ name: 'stepName', type: 'String' }] },
