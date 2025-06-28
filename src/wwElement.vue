@@ -33,14 +33,14 @@
       >
         {{ index + 1 }}
         <div v-if="tooltip.visible && tooltip.stepName === stepName" class="step-tooltip">
-          {{ wwLib.wwLang.getText(stepName) }}
+          {{ getTranslatedText(stepName) }}
         </div>
       </div>
     </div>
 
     <div v-if="modal.visible" class="ww-modal-overlay" @click="closeModal">
       <div class="ww-modal-content" @click.stop>
-        <h2>{{ wwLib.wwLang.getText(modal.title) }}</h2>
+        <h2>{{ getTranslatedText(modal.title) }}</h2>
         <p>This is a modal for step {{ modal.stepNumber }}!</p>
         <button @click="closeModal">Close</button>
       </div>
@@ -51,12 +51,10 @@
 <script>
 export default {
   props: {
-    // The 'content' prop holds all the editable data defined in ww-config.js
     content: {
       type: Object,
       required: true,
     },
-    // WeWeb internal prop to trigger actions, typically named 'wwElement'
     wwElement: {
       type: Object,
       required: false,
@@ -64,8 +62,8 @@ export default {
   },
   data() {
     return {
-      circleSize: 150, // Size of the SVG viewbox
-      strokeWidth: 10, // Width of the progress ring
+      circleSize: 150,
+      strokeWidth: 10,
       tooltip: {
         visible: false,
         stepName: '',
@@ -92,9 +90,6 @@ export default {
     },
     // Determine the actual step names to use, based on the stepSource
     actualStepNames() {
-      // If stepSource is 'bindable', the stepNames array might be bound to something
-      // so we use content.stepNames directly.
-      // If stepSource is 'fixed', content.stepNames will be the array defined in ww-config.js.
       return Array.isArray(this.content.stepNames) ? this.content.stepNames : [];
     },
     // Determine the total number of steps based on the actualStepNames or totalSteps property
@@ -102,27 +97,28 @@ export default {
         if (this.content.stepSource && this.content.stepSource.is === 'bindable') {
             return this.actualStepNames.length;
         }
-        return this.content.totalSteps || 1; // Fallback to 1 to prevent division by zero
+        return this.content.totalSteps || 1;
     },
     // Calculate the percentage of completion for the progress circle
     percentageComplete() {
       if (this.currentTotalSteps === 0) return 0;
-      // Calculate progress based on how many steps are completed.
-      // Each step contributes (100 / totalSteps) to the progress.
-      // Assuming 'currentStep' refers to the active step, all steps before it are completed.
-      // So, if currentStep is 1, 0 steps are completed. If currentStep is 3, 2 steps are completed.
       const completedStepsCount = Math.max(0, this.content.currentStep - 1);
       return Math.round((completedStepsCount / this.currentTotalSteps) * 100);
+    },
+    // Expose wwLib to the template via a computed property
+    // This makes it safely accessible after the component is mounted and wwLib is available
+    wwLib() {
+      return window.wwLib;
     },
   },
   methods: {
     getStepStatus(stepNumber) {
       if (stepNumber < this.content.currentStep) {
-        return 'completed'; // Green indicator
+        return 'completed';
       } else if (stepNumber === this.content.currentStep) {
-        return 'current'; // Green border
+        return 'current';
       } else {
-        return 'unstarted'; // Grey border
+        return 'unstarted';
       }
     },
     showTooltip(stepName) {
@@ -134,23 +130,21 @@ export default {
       this.tooltip.stepName = '';
     },
     handleStepClick(stepNumber, stepName) {
-      // Only trigger the action if the step is completed
       if (stepNumber < this.content.currentStep) {
-        // Emit the 'trigger:action' event with the name of the action property ('onStepClick')
-        // and optionally pass data that WeWeb workflows can use.
         if (this.content.onStepClick) {
+          // Use this.wwLib.wwLang.getText() here
           this.$emit('trigger:action', {
             name: 'onStepClick',
-            args: { stepNumber, stepName: wwLib.wwLang.getText(stepName) },
+            args: { stepNumber, stepName: this.getTranslatedText(stepName) },
           });
         }
-        // Open the modal for demonstration purposes
         this.openModal(stepNumber, stepName);
       }
     },
     openModal(stepNumber, stepName) {
       this.modal.visible = true;
-      this.modal.title = `Step ${stepNumber}: ${stepName}`;
+      // Use this.wwLib.wwLang.getText() here
+      this.modal.title = `Step ${stepNumber}: ${this.getTranslatedText(stepName)}`;
       this.modal.stepNumber = stepNumber;
     },
     closeModal() {
@@ -158,11 +152,20 @@ export default {
       this.modal.title = '';
       this.modal.stepNumber = null;
     },
+    // Helper method to get translated text, ensuring wwLib is available
+    getTranslatedText(text) {
+      // Check if wwLib and wwLang are available before attempting to use them
+      if (this.wwLib && this.wwLib.wwLang) {
+        return this.wwLib.wwLang.getText(text);
+      }
+      return text; // Fallback to original text if translation utility isn't ready
+    }
   },
 };
 </script>
 
 <style lang="scss" scoped>
+/* ... (Your existing styles remain the same) ... */
 .ww-progress-indicator {
   display: flex;
   flex-direction: column;
