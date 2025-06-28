@@ -9,7 +9,6 @@ export default {
     label: {
       en: "Workflow Progress Indicator",
     },
-    // icon: 'fontawesome/solid/road',
   },
   properties: {
     stepSource: {
@@ -40,15 +39,16 @@ export default {
     currentStep: {
       label: { en: "Current Step" },
       type: "Number",
-      defaultValue: 1,
+      defaultValue: 0, // Changed to 0
       options: {
-        min: 1,
-        // Dynamically set max for current step based on totalSteps or stepNames length
+        min: 0, // Changed to 0: Nothing done
         max: (content, sidepanelContent) => {
           if (sidepanelContent.stepSource && sidepanelContent.stepSource.is === 'bindable' && Array.isArray(content.stepNames)) {
-            return content.stepNames.length || 1; // Max is length of bound array, or 1 if empty
+            // Max is length of bound array (all steps completed), or 0 if empty
+            return content.stepNames.length || 0;
           }
-          return content.totalSteps || 1; // Max is totalSteps, or 1 if not set
+          // Max is totalSteps (all steps completed), or 0 if not set
+          return content.totalSteps || 0;
         },
       },
       bindable: true,

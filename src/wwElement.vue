@@ -85,33 +85,30 @@ export default {
     strokeDashoffset() {
       return this.circumference - (this.percentageComplete / 100) * this.circumference;
     },
-    // Determine the actual step names to use, based on the stepSource
     actualStepNames() {
-      // If stepSource is 'bindable', content.stepNames will be the bound array.
-      // If stepSource is 'fixed', content.stepNames will be the array from ww-config.js (or default).
-      // We also need to slice it to respect the totalSteps property in fixed mode.
       if (this.content.stepSource && this.content.stepSource.is === 'fixed') {
         const fixedNames = Array.isArray(this.content.stepNames) ? this.content.stepNames : [];
-        // Slice the array to match the totalSteps, up to a maximum of 15 for display.
-        // This ensures the visual number of steps aligns with totalSteps
-        return fixedNames.slice(0, Math.min(this.content.totalSteps || 1, 15));
+        return fixedNames.slice(0, Math.min(this.content.totalSteps || 0, 15)); // Adjusted for 0-based totalSteps interpretation
       }
-      // For bindable, we still respect the 15 max, though the editor enforces it more directly.
       const bindableNames = Array.isArray(this.content.stepNames) ? this.content.stepNames : [];
       return bindableNames.slice(0, 15);
     },
-    // Determine the total number of steps based on the actualStepNames or totalSteps property
     currentTotalSteps() {
-        // When bindable, the total steps is the length of the *actual* bound array, up to 15.
         if (this.content.stepSource && this.content.stepSource.is === 'bindable') {
             return Math.min(this.actualStepNames.length, 15);
         }
-        // When fixed, the total steps is content.totalSteps, up to 15.
-        return Math.min(this.content.totalSteps || 1, 15);
+        return Math.min(this.content.totalSteps || 0, 15); // Adjusted for 0-based totalSteps interpretation
     },
     percentageComplete() {
+      // If no steps defined, percentage is 0.
       if (this.currentTotalSteps === 0) return 0;
-      const completedStepsCount = Math.max(0, this.content.currentStep - 1);
+
+      // If currentStep is 0, nothing is done.
+      // If currentStep is 1, it means 1 step is done.
+      // If currentStep is N, it means N steps are done.
+      // Maximum completed steps can't exceed currentTotalSteps.
+      const completedStepsCount = Math.max(0, Math.min(this.content.currentStep, this.currentTotalSteps));
+
       return Math.round((completedStepsCount / this.currentTotalSteps) * 100);
     },
     wwLib() {
@@ -120,11 +117,18 @@ export default {
   },
   methods: {
     getStepStatus(stepNumber) {
-      if (stepNumber < this.content.currentStep) {
+      // stepNumber is 1-based (from v-for index + 1)
+      // content.currentStep is 0-based (0 = nothing done, 1 = step 1 done, etc.)
+
+      if (stepNumber <= this.content.currentStep) {
+        // If step number is less than or equal to currentStep, it's completed (green indicator)
         return 'completed';
-      } else if (stepNumber === this.content.currentStep) {
+      } else if (stepNumber === this.content.currentStep + 1) {
+        // If step number is one greater than currentStep, it's the current active step (green border)
+        // This covers the case where currentStep is 0, then stepNumber 1 becomes 'current'
         return 'current';
       } else {
+        // Otherwise, it's unstarted (grey border)
         return 'unstarted';
       }
     },
@@ -137,7 +141,9 @@ export default {
       this.tooltip.stepName = '';
     },
     handleStepClick(stepNumber, stepName) {
-      if (stepNumber < this.content.currentStep) {
+      // Only trigger the action if the step is completed
+      // A step is completed if its 1-based stepNumber is less than or equal to content.currentStep
+      if (stepNumber <= this.content.currentStep) {
         if (this.content.onStepClick) {
           this.$emit('trigger:action', {
             name: 'onStepClick',
@@ -168,6 +174,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+/* ... (Your existing styles remain the same) ... */
 .ww-progress-indicator {
   display: flex;
   flex-direction: column;
