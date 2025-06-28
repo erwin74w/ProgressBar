@@ -24,16 +24,16 @@
 
     <div class="step-indicators-container">
       <div
-        v-for="(stepName, index) in actualStepNames"
+        v-for="index in currentTotalSteps"
         :key="index"
-        :class="['step-indicator', getStepStatus(index + 1)]"
-        @mouseenter="showTooltip(stepName)"
+        :class="['step-indicator', getStepStatus(index)]"
+        @mouseenter="showTooltip(getTranslatedText(actualStepNames[index - 1]))"
         @mouseleave="hideTooltip"
-        @click="handleStepClick(index + 1, stepName)"
+        @click="handleStepClick(index, getTranslatedText(actualStepNames[index - 1]))"
       >
-        {{ index + 1 }}
-        <div v-if="tooltip.visible && tooltip.stepName === stepName" class="step-tooltip">
-          {{ getTranslatedText(stepName) }}
+        {{ index }}
+        <div v-if="tooltip.visible && tooltip.stepName === getTranslatedText(actualStepNames[index - 1])" class="step-tooltip">
+          {{ getTranslatedText(actualStepNames[index - 1]) }}
         </div>
       </div>
     </div>
@@ -85,28 +85,31 @@ export default {
     strokeDashoffset() {
       return this.circumference - (this.percentageComplete / 100) * this.circumference;
     },
+    // This now determines the names available for display/tooltip,
+    // but the *number* of steps shown is driven by currentTotalSteps.
     actualStepNames() {
-      if (this.content.stepSource && this.content.stepSource.is === 'fixed') {
-        const fixedNames = Array.isArray(this.content.stepNames) ? this.content.stepNames : [];
-        return fixedNames.slice(0, Math.min(this.content.totalSteps || 0, 15)); // Adjusted for 0-based totalSteps interpretation
+      const defaultNames = Array.isArray(this.content.stepNames) ? this.content.stepNames : [];
+      // Always ensure we have at least 15 default names to avoid index out of bounds
+      // if totalSteps is set higher than the default stepNames array length
+      while (defaultNames.length < 15) {
+          defaultNames.push(`Step ${defaultNames.length + 1}`);
       }
-      const bindableNames = Array.isArray(this.content.stepNames) ? this.content.stepNames : [];
-      return bindableNames.slice(0, 15);
+      // Return the default names up to the maximum 15.
+      return defaultNames.slice(0, 15);
     },
+    // This is the core logic that defines how many steps are actually rendered.
     currentTotalSteps() {
         if (this.content.stepSource && this.content.stepSource.is === 'bindable') {
-            return Math.min(this.actualStepNames.length, 15);
+            // For bindable, the number of steps is the length of the bound stepNames (actual data), capped at 15.
+            return Math.min(this.content.stepNames ? this.content.stepNames.length : 0, 15);
         }
-        return Math.min(this.content.totalSteps || 0, 15); // Adjusted for 0-based totalSteps interpretation
+        // For fixed, the number of steps is directly content.totalSteps, capped at 15.
+        return Math.min(this.content.totalSteps || 0, 15);
     },
     percentageComplete() {
-      // If no steps defined, percentage is 0.
       if (this.currentTotalSteps === 0) return 0;
 
-      // If currentStep is 0, nothing is done.
-      // If currentStep is 1, it means 1 step is done.
-      // If currentStep is N, it means N steps are done.
-      // Maximum completed steps can't exceed currentTotalSteps.
+      // Completed steps count correctly reflects the 0-based currentStep.
       const completedStepsCount = Math.max(0, Math.min(this.content.currentStep, this.currentTotalSteps));
 
       return Math.round((completedStepsCount / this.currentTotalSteps) * 100);
@@ -116,19 +119,12 @@ export default {
     },
   },
   methods: {
-    getStepStatus(stepNumber) {
-      // stepNumber is 1-based (from v-for index + 1)
-      // content.currentStep is 0-based (0 = nothing done, 1 = step 1 done, etc.)
-
+    getStepStatus(stepNumber) { // stepNumber here is 1-based from v-for
       if (stepNumber <= this.content.currentStep) {
-        // If step number is less than or equal to currentStep, it's completed (green indicator)
         return 'completed';
       } else if (stepNumber === this.content.currentStep + 1) {
-        // If step number is one greater than currentStep, it's the current active step (green border)
-        // This covers the case where currentStep is 0, then stepNumber 1 becomes 'current'
         return 'current';
       } else {
-        // Otherwise, it's unstarted (grey border)
         return 'unstarted';
       }
     },
@@ -141,9 +137,7 @@ export default {
       this.tooltip.stepName = '';
     },
     handleStepClick(stepNumber, stepName) {
-      // Only trigger the action if the step is completed
-      // A step is completed if its 1-based stepNumber is less than or equal to content.currentStep
-      if (stepNumber <= this.content.currentStep) {
+      if (stepNumber <= this.content.currentStep) { // Clickable only if completed
         if (this.content.onStepClick) {
           this.$emit('trigger:action', {
             name: 'onStepClick',
