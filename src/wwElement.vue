@@ -76,37 +76,44 @@ export default {
     };
   },
   computed: {
-    // Calculate the radius of the circle
     radius() {
       return (this.circleSize - this.strokeWidth) / 2;
     },
-    // Calculate the circumference of the circle
     circumference() {
       return 2 * Math.PI * this.radius;
     },
-    // Calculate the stroke-dashoffset for the progress bar
     strokeDashoffset() {
       return this.circumference - (this.percentageComplete / 100) * this.circumference;
     },
     // Determine the actual step names to use, based on the stepSource
     actualStepNames() {
-      return Array.isArray(this.content.stepNames) ? this.content.stepNames : [];
+      // If stepSource is 'bindable', content.stepNames will be the bound array.
+      // If stepSource is 'fixed', content.stepNames will be the array from ww-config.js (or default).
+      // We also need to slice it to respect the totalSteps property in fixed mode.
+      if (this.content.stepSource && this.content.stepSource.is === 'fixed') {
+        const fixedNames = Array.isArray(this.content.stepNames) ? this.content.stepNames : [];
+        // Slice the array to match the totalSteps, up to a maximum of 15 for display.
+        // This ensures the visual number of steps aligns with totalSteps
+        return fixedNames.slice(0, Math.min(this.content.totalSteps || 1, 15));
+      }
+      // For bindable, we still respect the 15 max, though the editor enforces it more directly.
+      const bindableNames = Array.isArray(this.content.stepNames) ? this.content.stepNames : [];
+      return bindableNames.slice(0, 15);
     },
     // Determine the total number of steps based on the actualStepNames or totalSteps property
     currentTotalSteps() {
+        // When bindable, the total steps is the length of the *actual* bound array, up to 15.
         if (this.content.stepSource && this.content.stepSource.is === 'bindable') {
-            return this.actualStepNames.length;
+            return Math.min(this.actualStepNames.length, 15);
         }
-        return this.content.totalSteps || 1;
+        // When fixed, the total steps is content.totalSteps, up to 15.
+        return Math.min(this.content.totalSteps || 1, 15);
     },
-    // Calculate the percentage of completion for the progress circle
     percentageComplete() {
       if (this.currentTotalSteps === 0) return 0;
       const completedStepsCount = Math.max(0, this.content.currentStep - 1);
       return Math.round((completedStepsCount / this.currentTotalSteps) * 100);
     },
-    // Expose wwLib to the template via a computed property
-    // This makes it safely accessible after the component is mounted and wwLib is available
     wwLib() {
       return window.wwLib;
     },
@@ -132,7 +139,6 @@ export default {
     handleStepClick(stepNumber, stepName) {
       if (stepNumber < this.content.currentStep) {
         if (this.content.onStepClick) {
-          // Use this.wwLib.wwLang.getText() here
           this.$emit('trigger:action', {
             name: 'onStepClick',
             args: { stepNumber, stepName: this.getTranslatedText(stepName) },
@@ -143,7 +149,6 @@ export default {
     },
     openModal(stepNumber, stepName) {
       this.modal.visible = true;
-      // Use this.wwLib.wwLang.getText() here
       this.modal.title = `Step ${stepNumber}: ${this.getTranslatedText(stepName)}`;
       this.modal.stepNumber = stepNumber;
     },
@@ -152,20 +157,17 @@ export default {
       this.modal.title = '';
       this.modal.stepNumber = null;
     },
-    // Helper method to get translated text, ensuring wwLib is available
     getTranslatedText(text) {
-      // Check if wwLib and wwLang are available before attempting to use them
       if (this.wwLib && this.wwLib.wwLang) {
         return this.wwLib.wwLang.getText(text);
       }
-      return text; // Fallback to original text if translation utility isn't ready
+      return text;
     }
   },
 };
 </script>
 
 <style lang="scss" scoped>
-/* ... (Your existing styles remain the same) ... */
 .ww-progress-indicator {
   display: flex;
   flex-direction: column;
@@ -213,8 +215,11 @@ export default {
 /* Step Indicators Styling */
 .step-indicators-container {
   display: flex;
+  flex-wrap: wrap; /* Allow items to wrap to the next line */
+  justify-content: center; /* Center items in each row */
   gap: 15px;
   margin-top: 20px;
+  max-width: calc(5 * 40px + 4 * 15px); /* (5 steps * 40px width) + (4 gaps * 15px) for 5 items per row */
 }
 
 .step-indicator {
