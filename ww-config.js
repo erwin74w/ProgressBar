@@ -31,7 +31,7 @@ export default {
       defaultValue: 5,
       options: {
         min: 1,
-        max: 15, // Enforce a maximum of 15 steps
+        max: 15, // Max total steps is 15
       },
       bindable: true,
       hidden: (content, sidepanelContent) => sidepanelContent.stepSource && sidepanelContent.stepSource.is === 'bindable',
@@ -39,16 +39,19 @@ export default {
     currentStep: {
       label: { en: "Current Step" },
       type: "Number",
-      defaultValue: 0, // Changed to 0
+      defaultValue: 0,
       options: {
-        min: 0, // Changed to 0: Nothing done
+        min: 0, // 0: Nothing done
+        // CORRECTED: Max value should be the actual total number of steps (or length of stepNames).
+        // The cap of 15 is already handled by totalSteps.
         max: (content, sidepanelContent) => {
           if (sidepanelContent.stepSource && sidepanelContent.stepSource.is === 'bindable' && Array.isArray(content.stepNames)) {
-            // Max is length of bound array (all steps completed), or 0 if empty
-            return content.stepNames.length || 0;
+            // Max for bindable is the actual length of the bound array.
+            // This will also indirectly be capped by the 15 steps visually shown if the array is longer.
+            return content.stepNames.length;
           }
-          // Max is totalSteps (all steps completed), or 0 if not set
-          return content.totalSteps || 0;
+          // Max for fixed is content.totalSteps.
+          return content.totalSteps || 0; // Use totalSteps, with 0 fallback
         },
       },
       bindable: true,
