@@ -9,6 +9,7 @@ export default {
     label: {
       en: "Workflow Progress Indicator",
     },
+    // icon: 'fontawesome/solid/road',
   },
   properties: {
     stepSource: {
@@ -31,7 +32,7 @@ export default {
       defaultValue: 5,
       options: {
         min: 1,
-        max: 15, // Max total steps is 15
+        max: 15, // Enforce a maximum of 15 steps for total steps
       },
       bindable: true,
       hidden: (content, sidepanelContent) => sidepanelContent.stepSource && sidepanelContent.stepSource.is === 'bindable',
@@ -39,19 +40,20 @@ export default {
     currentStep: {
       label: { en: "Current Step" },
       type: "Number",
-      defaultValue: 0,
+      defaultValue: 0, // 0: Nothing done
       options: {
-        min: 0, // 0: Nothing done
-        // CORRECTED: Max value should be the actual total number of steps (or length of stepNames).
-        // The cap of 15 is already handled by totalSteps.
+        min: 0, // Current step can start at 0
+        // CORRECTED: Max value should dynamically match the 'totalSteps' value
+        // (which is already capped at 15) or the bound stepNames length.
         max: (content, sidepanelContent) => {
           if (sidepanelContent.stepSource && sidepanelContent.stepSource.is === 'bindable' && Array.isArray(content.stepNames)) {
-            // Max for bindable is the actual length of the bound array.
-            // This will also indirectly be capped by the 15 steps visually shown if the array is longer.
+            // When bindable, the max is the actual length of the bound array (content.stepNames)
+            // This will naturally be capped at 15 visually if the array is longer, but the editor should show the true length.
             return content.stepNames.length;
           }
-          // Max for fixed is content.totalSteps.
-          return content.totalSteps || 0; // Use totalSteps, with 0 fallback
+          // When fixed, the max should be the value of 'totalSteps' from the sidepanel.
+          // Use sidepanelContent.totalSteps for immediate reactivity with editor input.
+          return sidepanelContent.totalSteps || 0; // Fallback to 0 if totalSteps isn't set yet
         },
       },
       bindable: true,
